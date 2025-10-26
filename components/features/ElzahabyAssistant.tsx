@@ -6,11 +6,8 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Paperclip, Send, Mic, Sparkles, Zap, BrainCircuit, Bot, User, Volume2, FileImage, FileVideo, X, Search, Link as LinkIcon, Download, Settings, PhoneCall } from 'lucide-react';
+import { Paperclip, Send, Mic, Sparkles, Zap, BrainCircuit, Bot, User, Volume2, FileImage, FileVideo, X, Search, Link as LinkIcon, Download } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
-import VoiceSettings, { VoiceConfig } from './VoiceSettings';
-import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
-import { getPersonalityResponse, enhanceAIPrompt } from '../../utils/assistantPersonality';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- TYPE DEFINITIONS ---
@@ -88,39 +85,15 @@ const ElzahabyAssistant: React.FC = () => {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [aiMode, setAiMode] = useState<AiMode>('normal');
-  const [isVoiceMode, setIsVoiceMode] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [voiceConfig, setVoiceConfig] = useState<VoiceConfig>(() => {
-    const saved = localStorage.getItem('elzahabyVoiceConfig');
-    return saved ? JSON.parse(saved) : {
-      voiceGender: 'male',
-      voiceName: 'Puck',
-      speechRate: 1.0,
-      pitch: 1.0,
-      volume: 1.0,
-      autoSpeak: true,
-      language: 'ar-EG',
-    };
-  });
+  const [isListening, setIsListening] = useState(false);
 
   const aiRef = useRef<GoogleGenAI | null>(null);
   const chatRef = useRef<Chat | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const speechRecognitionRef = useRef<any>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
-
-  const handleVoiceTranscript = (transcript: string) => {
-    setInputText(transcript);
-    if (transcript.trim()) {
-      setTimeout(() => handleSendMessage(), 500);
-    }
-  };
-
-  const { isListening, isSpeaking, toggleListening, speak, stopSpeaking } = useVoiceAssistant({
-    config: voiceConfig,
-    onTranscript: handleVoiceTranscript,
-  });
 
   useEffect(() => {
     // Initialize API and chat
@@ -135,6 +108,29 @@ const ElzahabyAssistant: React.FC = () => {
 
     // Initialize Audio Context for TTS
     audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+
+    // Initialize Speech Recognition
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+        speechRecognitionRef.current = new SpeechRecognition();
+        speechRecognitionRef.current.continuous = false;
+        speechRecognitionRef.current.lang = 'en-US';
+        speechRecognitionRef.current.interimResults = false;
+
+        speechRecognitionRef.current.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            setInputText(transcript);
+            setIsListening(false);
+        };
+        speechRecognitionRef.current.onerror = (event: any) => {
+            console.error('Speech recognition error:', event.error);
+            toast.error(`Voice input error: ${event.error}`);
+            setIsListening(false);
+        };
+        speechRecognitionRef.current.onend = () => {
+            setIsListening(false);
+        };
+    }
 
   }, []);
 
@@ -158,35 +154,18 @@ const ElzahabyAssistant: React.FC = () => {
     };
     setMessages(prev => [...prev, userMessage]);
 
-    const personalityCheck = getPersonalityResponse(textToSend);
-    if (personalityCheck.shouldIntercept && personalityCheck.response) {
-      const aiMessageId = (Date.now() + 1).toString();
-      const aiMessage: ChatMessage = {
-        id: aiMessageId,
-        sender: 'ai',
-        text: personalityCheck.response,
-      };
-      setTimeout(() => {
-        setMessages(prev => [...prev, aiMessage]);
-        if (voiceConfig.autoSpeak || isVoiceMode) {
-          speak(personalityCheck.response!);
-        }
-        setIsLoading(false);
-      }, 500);
-      return;
-    }
-
+    // Create a placeholder for the AI response
     const aiMessageId = (Date.now() + 1).toString();
     setMessages(prev => [...prev, { id: aiMessageId, sender: 'ai', text: '...' }]);
 
     try {
       const parts: any[] = [];
-      const enhancedPrompt = enhanceAIPrompt(textToSend);
-      if (textToSend) parts.push({ text: enhancedPrompt });
+      if (textToSend) parts.push({ text: textToSend });
       for (const att of attachments) {
         parts.push({ inlineData: { data: att.base64, mimeType: att.type } });
       }
 
+      // Handle special commands
       if (textToSend.startsWith('/generate ') || textToSend.startsWith('/edit ')) {
         await handleImageGeneration(textToSend, aiMessageId);
       } else {
@@ -247,10 +226,6 @@ const ElzahabyAssistant: React.FC = () => {
       setMessages(prev => prev.map(msg =>
           msg.id === aiMessageId ? { ...msg, text: fullResponseText, sources: sources.length > 0 ? sources : undefined } : msg
       ));
-
-      if ((voiceConfig.autoSpeak || isVoiceMode) && fullResponseText) {
-        speak(fullResponseText);
-      }
   };
 
 
@@ -325,22 +300,19 @@ const ElzahabyAssistant: React.FC = () => {
      // Reset file input value to allow re-uploading the same file
     event.target.value = '';
   };
-
-  const handleConfigChange = (newConfig: VoiceConfig) => {
-    setVoiceConfig(newConfig);
-    localStorage.setItem('elzahabyVoiceConfig', JSON.stringify(newConfig));
-  };
-
-  const toggleVoiceMode = () => {
-    if (isVoiceMode) {
-      stopSpeaking();
-      setIsVoiceMode(false);
-      toast.success('تم إيقاف المساعد الصوتي');
-    } else {
-      setIsVoiceMode(true);
-      toast.success('تم تفعيل المساعد الصوتي التفاعلي');
-      toggleListening();
-    }
+  
+  const handleToggleVoice = () => {
+      if (!speechRecognitionRef.current) {
+          toast.error("Voice input is not supported on this browser.");
+          return;
+      }
+      if (isListening) {
+          speechRecognitionRef.current.stop();
+          setIsListening(false);
+      } else {
+          speechRecognitionRef.current.start();
+          setIsListening(true);
+      }
   };
   
   const handleTextToSpeech = async (messageId: string, text: string) => {
@@ -397,15 +369,7 @@ const ElzahabyAssistant: React.FC = () => {
       <Toaster position="top-center" richColors />
       <header className="flex-shrink-0 flex items-center justify-between p-3 border-b border-gray-700/50">
         <h2 className="text-lg font-bold text-yellow-400">Elzahaby Assistant</h2>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="p-2 text-gray-400 hover:text-yellow-400 transition-colors"
-            title="إعدادات الصوت"
-          >
-            <Settings size={20} />
-          </button>
-          <div className="flex items-center space-x-1 bg-gray-700/50 p-1 rounded-lg">
+        <div className="flex items-center space-x-1 bg-gray-700/50 p-1 rounded-lg">
           {(['fast', 'normal', 'thinking'] as AiMode[]).map(mode => (
             <button key={mode} onClick={() => setAiMode(mode)} className={`px-3 py-1 text-sm rounded-md transition-colors ${aiMode === mode ? 'bg-yellow-400 text-gray-900 font-semibold' : 'text-gray-300 hover:bg-gray-600/50'}`}>
               <div className="flex items-center space-x-1.5">
@@ -416,7 +380,6 @@ const ElzahabyAssistant: React.FC = () => {
               </div>
             </button>
           ))}
-          </div>
         </div>
       </header>
 
@@ -449,35 +412,6 @@ const ElzahabyAssistant: React.FC = () => {
                 </motion.div>
             )}
         </AnimatePresence>
-
-        {isVoiceMode && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="mb-2 p-3 bg-gradient-to-r from-yellow-400/10 to-amber-400/10 rounded-lg border border-yellow-400/30"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <motion.div
-                  animate={isListening ? { scale: [1, 1.2, 1] } : { scale: 1 }}
-                  transition={{ repeat: isListening ? Infinity : 0, duration: 1.5 }}
-                  className="w-3 h-3 bg-yellow-400 rounded-full"
-                />
-                <span className="text-sm text-yellow-300 font-semibold">
-                  {isListening ? 'جاري الاستماع...' : isSpeaking ? 'جاري التحدث...' : 'المساعد الصوتي نشط'}
-                </span>
-              </div>
-              <button
-                onClick={toggleVoiceMode}
-                className="text-xs text-gray-400 hover:text-yellow-400 transition-colors"
-              >
-                إيقاف
-              </button>
-            </div>
-          </motion.div>
-        )}
-
         <div className="relative flex items-center">
             <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-400 hover:text-yellow-400 transition-colors">
                 <Paperclip size={20} />
@@ -492,56 +426,16 @@ const ElzahabyAssistant: React.FC = () => {
               rows={1}
               disabled={isLoading}
             />
-            <div className="absolute right-0 flex items-center space-x-1">
-                <button
-                  onClick={toggleVoiceMode}
-                  className={`p-2 transition-colors relative ${isVoiceMode ? 'text-yellow-400' : 'text-gray-400 hover:text-yellow-400'}`}
-                  title="المساعد الصوتي التفاعلي"
-                >
-                  {isVoiceMode ? (
-                    <motion.div
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ repeat: Infinity, duration: 2 }}
-                    >
-                      <PhoneCall size={20} />
-                    </motion.div>
-                  ) : (
-                    <PhoneCall size={20} />
-                  )}
-                  {isVoiceMode && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                  )}
+            <div className="absolute right-0 flex items-center">
+                <button onClick={handleToggleVoice} className={`p-2 transition-colors ${isListening ? 'text-red-500' : 'text-gray-400 hover:text-yellow-400'}`}>
+                    {isListening ? <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity }}><Mic size={20} /></motion.div> : <Mic size={20} />}
                 </button>
-                <button
-                  onClick={toggleListening}
-                  className={`p-2 transition-colors ${isListening ? 'text-red-500' : 'text-gray-400 hover:text-yellow-400'}`}
-                  title="التعرف الصوتي"
-                >
-                  {isListening ? (
-                    <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity }}>
-                      <Mic size={20} />
-                    </motion.div>
-                  ) : (
-                    <Mic size={20} />
-                  )}
-                </button>
-                <button
-                  onClick={handleSendMessage}
-                  disabled={isLoading || (!inputText.trim() && attachments.length === 0)}
-                  className="p-2 text-gray-400 hover:text-yellow-400 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Send size={20} />
+                <button onClick={handleSendMessage} disabled={isLoading || (!inputText.trim() && attachments.length === 0)} className="p-2 text-gray-400 hover:text-yellow-400 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors">
+                    <Send size={20} />
                 </button>
             </div>
         </div>
       </footer>
-
-      <VoiceSettings
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        config={voiceConfig}
-        onConfigChange={handleConfigChange}
-      />
     </div>
   );
 };
