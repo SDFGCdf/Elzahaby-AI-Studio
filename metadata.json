@@ -1,0 +1,8 @@
+{
+  "name": "Elzahaby AI Studio",
+  "description": "A comprehensive AI-powered platform for content creation, including image and audio generation, an intelligent assistant, and a full-stack application generator. Designed by Engineer Mohamed Elzahaby.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

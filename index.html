@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Elzahaby AI Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Prettier library and plugins -->
+    <script src="https://unpkg.com/prettier@3.3.2/standalone.js"></script>
+    <script src="https://unpkg.com/prettier@3.3.2/plugins/babel.js"></script>
+    <script src="https://unpkg.com/prettier@3.3.2/plugins/estree.js"></script>
+    <script src="https://unpkg.com/prettier@3.3.2/plugins/html.js"></script>
+    <script src="https://unpkg.com/prettier@3.3.2/plugins/postcss.js"></script>
+    <script src="https://unpkg.com/prettier@3.3.2/plugins/typescript.js"></script>
+    <!-- Babel Standalone for live preview transpilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Preload UI Sounds -->
+    <audio id="click" src="https://storage.googleapis.com/aai-web-samples/codepro-sounds/click.mp3" preload="auto"></audio>
+    <audio id="send" src="https://storage.googleapis.com/aai-web-samples/codepro-sounds/send.mp3" preload="auto"></audio>
+    <audio id="open" src="https://storage.googleapis.com/aai-web-samples/codepro-sounds/open.mp3" preload="auto"></audio>
+  <script type="importmap">
+{
+  "imports": {
+    "@apollo/client": "https://esm.sh/@apollo/client@3.10.8",
+    "@dnd-kit/core": "https://esm.sh/@dnd-kit/core@6.1.0",
+    "@dnd-kit/sortable": "https://esm.sh/@dnd-kit/sortable@8.0.0",
+    "@emotion/react": "https://esm.sh/@emotion/react@11.11.4",
+    "@emotion/styled": "https://esm.sh/@emotion/styled@11.11.5",
+    "@faker-js/faker": "https://esm.sh/@faker-js/faker@8.4.1",
+    "@google/genai": "https://esm.sh/@google/genai@0.12.0",
+    "@headlessui/react": "https://esm.sh/@headlessui/react@2.1.2",
+    "@monaco-editor/react": "https://esm.sh/@monaco-editor/react@4.6.0",
+    "@nivo/bar": "https://esm.sh/@nivo/bar@0.87.0",
+    "@nivo/core": "https://esm.sh/@nivo/core@0.87.0",
+    "@nivo/line": "https://esm.sh/@nivo/line@0.87.0",
+    "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.1.1",
+    "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.1.1",
+    "@radix-ui/react-slider": "https://esm.sh/@radix-ui/react-slider@1.2.0",
+    "@radix-ui/react-tooltip": "https://esm.sh/@radix-ui/react-tooltip@1.1.2",
+    "@react-three/drei": "https://esm.sh/@react-three/drei@9.107.2",
+    "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.16.8",
+    "@react-three/postprocessing": "https://esm.sh/@react-three/postprocessing@2.16.2",
+    "@reduxjs/toolkit": "https://esm.sh/@reduxjs/toolkit@2.2.5",
+    "@tanstack/react-query": "https://esm.sh/@tanstack/react-query@5.45.1",
+    "@tanstack/react-query-devtools": "https://esm.sh/@tanstack/react-query-devtools@5.45.1",
+    "@tanstack/react-table": "https://esm.sh/@tanstack/react-table@8.19.2",
+    "@tanstack/react-virtual": "https://esm.sh/@tanstack/react-virtual@3.8.0",
+    "@tiptap/core": "https://esm.sh/@tiptap/core@2.4.0",
+    "@tiptap/pm": "https://esm.sh/@tiptap/pm@2.4.0",
+    "@tiptap/react": "https://esm.sh/@tiptap/react@2.4.0",
+    "@tiptap/starter-kit": "https://esm.sh/@tiptap/starter-kit@2.4.0",
+    "@types/three": "https://esm.sh/@types/three@0.165.0",
+    "animejs": "https://esm.sh/animejs@3.2.2",
+    "axios": "https://esm.sh/axios@1.7.2",
+    "chart.js": "https://esm.sh/chart.js@4.4.3",
+    "class-variance-authority": "https://esm.sh/class-variance-authority@0.7.0",
+    "classnames": "https://esm.sh/classnames@2.5.1",
+    "clsx": "https://esm.sh/clsx@2.1.1",
+    "cmdk": "https://esm.sh/cmdk@1.0.0",
+    "d3": "https://esm.sh/d3@7.9.0",
+    "date-fns": "https://esm.sh/date-fns@3.6.0",
+    "dayjs": "https://esm.sh/dayjs@1.11.11",
+    "dompurify": "https://esm.sh/dompurify@3.1.5",
+    "formik": "https://esm.sh/formik@2.4.6",
+    "framer-motion": "https://esm.sh/framer-motion@11.2.12",
+    "framer-motion-3d": "https://esm.sh/framer-motion-3d@11.2.12",
+    "graphql": "https://esm.sh/graphql@16.9.0",
+    "gsap": "https://esm.sh/gsap@3.12.5",
+    "howler": "https://esm.sh/howler@2.2.4",
+    "i18next": "https://esm.sh/i18next@23.11.5",
+    "immer": "https://esm.sh/immer@10.1.1",
+    "jotai": "https://esm.sh/jotai@2.8.3",
+    "jszip": "https://esm.sh/jszip@3.10.1",
+    "lodash": "https://esm.sh/lodash@4.17.21",
+    "lucide-react": "https://esm.sh/lucide-react@0.395.0",
+    "marked": "https://esm.sh/marked@13.0.1",
+    "moment": "https://esm.sh/moment@2.30.1",
+    "monaco-editor": "https://esm.sh/monaco-editor@0.49.0",
+    "nanoid": "https://esm.sh/nanoid@5.0.7",
+    "pako": "https://esm.sh/pako@2.1.0",
+    "papaparse": "https://esm.sh/papaparse@5.4.1",
+    "pdfjs-dist": "https://esm.sh/pdfjs-dist@4.4.168",
+    "react": "https://esm.sh/react@18.3.1",
+    "react/": "https://esm.sh/react@18.3.1/",
+    "react-beautiful-dnd": "https://esm.sh/react-beautiful-dnd@13.1.1",
+    "react-chartjs-2": "https://esm.sh/react-chartjs-2@5.2.0",
+    "react-color": "https://esm.sh/react-color@2.19.3",
+    "react-datepicker": "https://esm.sh/react-datepicker@7.2.0",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+    "react-dropzone": "https://esm.sh/react-dropzone@14.2.3",
+    "react-hook-form": "https://esm.sh/react-hook-form@7.52.0",
+    "react-hot-toast": "https://esm.sh/react-hot-toast@2.4.1",
+    "react-i18next": "https://esm.sh/react-i18next@14.1.2",
+    "react-markdown": "https://esm.sh/react-markdown@9.0.1",
+    "react-modal": "https://esm.sh/react-modal@3.16.1",
+    "react-redux": "https://esm.sh/react-redux@9.1.2",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.24.0",
+    "react-select": "https://esm.sh/react-select@5.8.0",
+    "react-spring": "https://esm.sh/react-spring@9.7.3",
+    "react-syntax-highlighter": "https://esm.sh/react-syntax-highlighter@15.5.0",
+    "react-syntax-highlighter/": "https://esm.sh/react-syntax-highlighter@15.5.0/",
+    "react-table": "https://esm.sh/react-table@7.8.0",
+    "react-toastify": "https://esm.sh/react-toastify@10.0.5",
+    "react-use": "https://esm.sh/react-use@17.5.0",
+    "react-virtuoso": "https://esm.sh/react-virtuoso@4.7.11",
+    "recharts": "https://esm.sh/recharts@2.12.7",
+    "recoil": "https://esm.sh/recoil@0.7.7",
+    "rehype-highlight": "https://esm.sh/rehype-highlight@7.0.0",
+    "redux-persist": "https://esm.sh/redux-persist@6.0.0",
+    "socket.io-client": "https://esm.sh/socket.io-client@4.7.5",
+    "sonner": "https://esm.sh/sonner@1.5.0",
+    "styled-components": "https://esm.sh/styled-components@6.1.11",
+    "swiper": "https://esm.sh/swiper@11.1.4",
+    "swiper/": "https://esm.sh/swiper@11.1.4/",
+    "tailwind-merge": "https://esm.sh/tailwind-merge@2.3.0",
+    "three": "https://esm.sh/three@0.165.0",
+    "three-stdlib": "https://esm.sh/three-stdlib@2.30.4",
+    "uuid": "https://esm.sh/uuid@9.0.1",
+    "vaul": "https://esm.sh/vaul@0.9.1",
+    "xlsx": "https://esm.sh/xlsx@0.18.5",
+    "yup": "https://esm.sh/yup@1.4.0",
+    "zod": "https://esm.sh/zod@3.23.8",
+    "zustand": "https://esm.sh/zustand@4.5.2",
+    "zustand/": "https://esm.sh/zustand@4.5.2/"
+  }
+}
+</script>
+</head>
+  <body class="bg-gray-900 text-gray-100">
+    <div id="root"></div>
+  </body>
+</html>
